@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>학생회 선거 투표지 생성기</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700;900&family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+:root{
+  --ink:#1c1c1e; --bg:#ede9e3; --card:#faf8f5;
+  --border:#d4cfc7; --accent:#2a5298; --accent2:#b8832a;
+  --muted:#8a8680; --danger:#c0392b; --success:#27ae60;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;}
+
+/* ── 헤더 ── */
+.app-hd{background:var(--ink);color:white;padding:13px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:200;box-shadow:0 2px 12px rgba(0,0,0,.4);}
+.app-hd h1{font-family:'Noto Serif KR',serif;font-size:.93rem;font-weight:700;letter-spacing:.04em;}
+.hd-btns{margin-left:auto;display:flex;gap:8px;}
+.btn-go{padding:7px 20px;border:none;border-radius:3px;font-family:'Noto Sans KR',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:opacity .15s;}
+.btn-go:hover{opacity:.82;}
+.btn-preview{background:var(--accent2);color:white;}
+.btn-back{background:#555;color:white;}
+.btn-print{background:var(--accent);color:white;}
+
+/* ── 스텝바 ── */
+.stepbar{display:flex;background:#111;padding:0 28px;}
+.stepbar-item{padding:8px 18px 8px 0;font-size:.7rem;font-weight:700;letter-spacing:.06em;color:#555;cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;white-space:nowrap;}
+.stepbar-item.on{color:var(--accent2);border-bottom-color:var(--accent2);}
+
+/* ── 메인 ── */
+.main{max-width:780px;margin:0 auto;padding:28px 20px 60px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:22px 26px;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.07);}
+.card-title{font-family:'Noto Serif KR',serif;font-size:.92rem;font-weight:700;color:var(--accent);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.sbadge{background:var(--accent);color:white;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;}
+
+/* ── 폼 ── */
+.frow{display:flex;gap:14px;margin-bottom:13px;align-items:center;}
+.frow label{font-size:.76rem;font-weight:700;color:var(--muted);min-width:72px;letter-spacing:.04em;}
+.frow input,.frow select{flex:1;border:1px solid var(--border);border-radius:4px;padding:7px 11px;font-family:'Noto Sans KR',sans-serif;font-size:.87rem;background:white;color:var(--ink);outline:none;transition:border-color .15s;}
+.frow input:focus,.frow select:focus{border-color:var(--accent);}
+
+/* ── 도장 업로드 ── */
+.stamp-area{border:2px dashed var(--border);border-radius:6px;padding:16px 20px;display:flex;align-items:center;gap:16px;background:white;cursor:pointer;transition:border-color .15s;}
+.stamp-area:hover{border-color:var(--accent);}
+.stamp-area input[type=file]{display:none;}
+.stamp-prev{width:52px;height:52px;object-fit:contain;border:1px solid var(--border);border-radius:4px;background:#fafafa;}
+.stamp-ph{width:52px;height:52px;border:1.5px dashed #ccc;border-radius:4px;display:flex;align-items:center;justify-content:center;color:#ccc;font-size:.65rem;text-align:center;line-height:1.4;}
+.stamp-info{font-size:.8rem;color:var(--muted);line-height:1.7;}
+.stamp-info strong{color:var(--ink);font-size:.85rem;}
+.btn-stamp-clear{padding:4px 10px;background:none;border:1px solid #ddd;border-radius:3px;font-size:.72rem;color:var(--danger);cursor:pointer;font-family:'Noto Sans KR',sans-serif;margin-top:4px;display:none;}
+
+/* ── 선출직 ── */
+.pos-card{border:1.5px solid var(--border);border-radius:6px;padding:15px 17px;margin-bottom:13px;background:white;position:relative;}
+.pos-hd{display:flex;align-items:center;gap:10px;margin-bottom:13px;}
+.pos-num{background:var(--ink);color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;}
+.pos-hd input{flex:1;border:1px solid var(--border);border-radius:4px;padding:7px 10px;font-family:'Noto Serif KR',serif;font-size:.9rem;font-weight:700;outline:none;}
+.pos-hd input:focus{border-color:var(--accent);}
+.pos-meta{display:flex;gap:10px;margin-bottom:13px;align-items:center;}
+.pos-meta label{font-size:.74rem;font-weight:700;color:var(--muted);white-space:nowrap;}
+.pos-meta select{border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:'Noto Sans KR',sans-serif;font-size:.82rem;background:white;outline:none;flex:1;}
+.cands-lbl{font-size:.74rem;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.04em;}
+.cands-list{display:flex;flex-direction:column;gap:7px;margin-bottom:10px;}
+.cand-row{display:flex;align-items:center;gap:8px;}
+.cand-row .cn{font-size:.76rem;font-weight:700;color:var(--muted);min-width:28px;text-align:center;}
+.cand-row input{flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:'Noto Serif KR',serif;font-size:.87rem;outline:none;}
+.cand-row input:focus{border-color:var(--accent);}
+.approval-badge{font-size:.68rem;background:#eaf6ea;color:var(--success);border:1px solid #b8ddb8;border-radius:20px;padding:2px 9px;font-weight:700;}
+.btn-add-cand{font-size:.73rem;color:var(--accent);background:none;border:1px dashed var(--accent);border-radius:4px;padding:5px 11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.btn-add-cand:hover{background:#eef3fb;}
+.btn-del-pos{position:absolute;top:13px;right:13px;background:none;border:1px solid #ddd;border-radius:4px;padding:3px 9px;font-size:.7rem;color:var(--danger);cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.btn-del-pos:hover{background:#fef0ef;border-color:var(--danger);}
+.btn-del-x{background:none;border:none;color:#ccc;cursor:pointer;font-size:1rem;padding:0 3px;transition:color .1s;}
+.btn-del-x:hover{color:var(--danger);}
+.btn-add-pos{width:100%;padding:12px;background:none;border:2px dashed var(--border);border-radius:6px;font-family:'Noto Sans KR',sans-serif;font-size:.83rem;font-weight:700;color:var(--muted);cursor:pointer;transition:all .15s;letter-spacing:.04em;}
+.btn-add-pos:hover{border-color:var(--accent);color:var(--accent);background:#eef3fb;}
+
+/* ── 유의사항 ── */
+.notice-list{display:flex;flex-direction:column;gap:7px;margin-bottom:11px;}
+.notice-row{display:flex;align-items:center;gap:8px;}
+.notice-row .ni{font-size:.76rem;font-weight:700;color:var(--muted);min-width:26px;}
+.notice-row input{flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 10px;font-family:'Noto Sans KR',sans-serif;font-size:.82rem;outline:none;}
+.notice-row input:focus{border-color:var(--accent);}
+.btn-add-notice{font-size:.73rem;color:var(--accent2);background:none;border:1px dashed var(--accent2);border-radius:4px;padding:5px 11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;}
+.btn-add-notice:hover{background:#fdf5e8;}
+.notice-hint{font-size:.74rem;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:#fdf8f0;border-left:3px solid var(--accent2);border-radius:0 4px 4px 0;line-height:1.6;}
+
+/* ── 미리보기 ── */
+.prev-bar{background:#111;padding:9px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.gtabs{display:flex;gap:5px;}
+.gtab{padding:5px 13px;border:1.5px solid #555;background:transparent;color:#aaa;border-radius:3px;font-size:.76rem;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all .1s;}
+.gtab.on{background:white;color:#1a1a1a;border-color:white;}
+.gtab:hover:not(.on){color:white;border-color:#999;}
+.prev-hint{font-size:.68rem;color:#555;margin-left:auto;}
+.sheets-wrap{padding:14px;display:flex;flex-direction:column;align-items:center;gap:10px;background:#b0aca4;min-height:calc(100vh - 96px);}
+.grade-sec{display:none;width:100%;flex-direction:column;align-items:center;gap:10px;}
+.grade-sec.on{display:flex;}
+
+/* ══ A4 가로 · 6장(3×2) ══
+   물리 인쇄 여백 고려:
+   대부분 프린터 비인쇄 영역 4~5mm
+   → 여백 8mm(좌우) / 7mm(상하) 로 안전하게 */
+.a4{
+  background:white;
+  box-shadow:0 3px 16px rgba(0,0,0,.28);
+  width:297mm; height:210mm;
+  padding:7mm 8mm;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+
+.ballot-row{flex:1;display:flex;min-height:0;}
+
+.cut-h{
+  height:5mm;
+  display:flex;align-items:center;
+  color:#c0bdb8;font-size:5.5pt;
+  overflow:hidden;white-space:nowrap;
+  flex-shrink:0;letter-spacing:1.5px;
+}
+.cut-v{width:5mm;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cut-v-line{width:0;height:100%;border-left:1px dashed #c0bdb8;}
+
+/* ── 투표지 1개 ──
+   사용가능 영역: (297-16)mm × (210-14)mm = 281 × 196mm
+   투표지 크기:
+   - 가로: (281 - 5mm×2) ÷ 3 = 90.3mm
+   - 세로: (196 - 5mm) ÷ 2  = 95.5mm
+*/
+.ballot{
+  flex:1;
+  border:1.5px solid #111;
+  display:flex;flex-direction:column;
+  overflow:hidden;min-width:0;
+}
+
+.b-title{
+  text-align:center;
+  font-family:'Noto Serif KR',serif;
+  font-weight:900;
+  font-size:10pt;
+  letter-spacing:.2em;
+  padding:1.8mm 0;
+  border-bottom:1.5px solid #333;
+  flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+
+.b-body{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+
+.b-pos-title{
+  background:#f0f0f0;
+  font-family:'Noto Serif KR',serif;font-weight:700;
+  font-size:7pt;
+  text-align:center;
+  border-bottom:1px solid #555;
+  display:flex;align-items:center;justify-content:center;
+  line-height:1.3;flex-shrink:0;
+  padding:.9mm 1mm;
+}
+
+/* 일반후보 행 */
+.b-cand{
+  display:grid;grid-template-columns:22% 16% 1fr 20%;
+  border-bottom:.5px solid #ccc;
+  flex-shrink:0;
+  font-family:'Noto Serif KR',serif;
+  min-height:7.8mm;font-size:7.5pt;
+}
+.b-cand.se{border-bottom:1px solid #555;}
+
+/* 단독후보 (기표칸 없음) */
+.b-solo{
+  display:grid;grid-template-columns:22% 16% 1fr;
+  border-bottom:1px solid #555;
+  flex-shrink:0;
+  font-family:'Noto Serif KR',serif;
+  min-height:7.8mm;font-size:7.5pt;
+}
+
+.bc{display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.bcl{border-right:.5px solid #bbb;color:#444;letter-spacing:.06em;}
+.bcn{border-right:.5px solid #bbb;font-weight:700;}
+.bcm{border-right:.5px solid #bbb;font-weight:700;justify-content:flex-start;padding-left:1.5mm;letter-spacing:.04em;font-size:8pt;}
+
+/* 찬반 */
+.b-ap-label{display:grid;grid-template-columns:1fr 1fr;border-bottom:.5px solid #ccc;flex-shrink:0;font-family:'Noto Serif KR',serif;min-height:6mm;font-size:7.5pt;}
+.b-ap-box{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #555;flex-shrink:0;min-height:8.5mm;}
+.balc{display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.1em;}
+.balc:first-child{border-right:.5px solid #bbb;}
+.babc{display:flex;align-items:center;justify-content:center;}
+.babc:first-child{border-right:.5px solid #bbb;}
+
+/* 유의사항 — 5항목, 5.2pt */
+.b-notice{
+  flex-shrink:0;
+  border-bottom:1px solid #333;
+  font-family:'Noto Sans KR',sans-serif;
+  padding:.9mm 1.5mm;
+}
+.b-notice-title{font-weight:700;font-size:5.5pt;margin-bottom:.25mm;}
+.b-notice-list{list-style:none;padding:0;}
+.b-notice-list li{line-height:1.48;font-size:5.2pt;}
+
+/* 발행처 */
+.b-footer{
+  border-top:1px solid #333;
+  display:flex;align-items:center;justify-content:center;
+  gap:1.5mm;flex-shrink:0;margin-top:auto;
+  padding:1.2mm 2mm;min-height:7mm;
+}
+.b-footer-txt{font-family:'Noto Serif KR',serif;font-weight:700;font-size:6.5pt;text-align:center;letter-spacing:.02em;line-height:1.3;}
+.stamp{object-fit:contain;flex-shrink:0;width:9mm;height:9mm;}
+
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+  body{background:white!important;}
+  #setup-screen,.app-hd,.stepbar{display:none!important;}
+  #preview-screen{display:block!important;}
+  .prev-bar{display:none!important;}
+  .sheets-wrap{padding:0!important;gap:0!important;background:white!important;min-height:0!important;}
+  .grade-sec{display:flex!important;}
+  .a4{box-shadow:none!important;}
+  @page{size:A4 landscape;margin:0;}
+}
+</style>
+</head>
+<body>
+
+<div class="app-hd">
+  <h1>📋 학생회 선거 투표지 생성기</h1>
+  <div class="hd-btns" id="hd-setup">
+    <button class="btn-go btn-preview" onclick="goPreview()">미리보기 / 인쇄 →</button>
+  </div>
+  <div class="hd-btns" id="hd-prev" style="display:none">
+    <button class="btn-go btn-back" onclick="goSetup()">← 설정으로</button>
+    <button class="btn-go btn-print" onclick="window.print()">🖨 인쇄 (원본 1장)</button>
+  </div>
+</div>
+
+<div class="stepbar" id="stepbar">
+  <div class="stepbar-item on" onclick="scrollCard(0)">STEP 1&nbsp; 기본설정</div>
+  <div class="stepbar-item"    onclick="scrollCard(1)">STEP 2&nbsp; 도장</div>
+  <div class="stepbar-item"    onclick="scrollCard(2)">STEP 3&nbsp; 선출직</div>
+  <div class="stepbar-item"    onclick="scrollCard(3)">STEP 4&nbsp; 유의사항</div>
+</div>
+
+<!-- ══ 설정 화면 ══ -->
+<div id="setup-screen">
+<div class="main">
+
+  <!-- STEP 1 -->
+  <div class="card" id="card-0">
+    <div class="card-title"><span class="sbadge">1</span> 기본 설정</div>
+    <div class="frow"><label>학교명</label><input type="text" id="school" value="○○중학교" placeholder="예: 대구일중학교"></div>
+    <div class="frow"><label>년도</label><input type="number" id="year" value="2026" min="2020" max="2099" style="max-width:110px"></div>
+    <div class="frow"><label>선거명</label><input type="text" id="etitle" value="전교학생회 임원선거"></div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="card" id="card-1">
+    <div class="card-title"><span class="sbadge">2</span> 선거관리위원회 직인</div>
+    <div class="stamp-area" onclick="document.getElementById('stamp-file').click()">
+      <input type="file" id="stamp-file" accept="image/*" onchange="loadStamp(this)">
+      <div id="stamp-ph-wrap">
+        <div class="stamp-ph" id="stamp-ph">직인<br>이미지</div>
+        <img id="stamp-img" class="stamp-prev" style="display:none" src="" alt="직인">
+      </div>
+      <div class="stamp-info">
+        <strong id="stamp-status">이미지를 업로드하세요</strong><br>
+        JPG·PNG 등 이미지 파일 지원<br>
+        없으면 업로드 없이 진행 가능
+        <br><button class="btn-stamp-clear" id="stamp-clear" onclick="clearStamp(event)">직인 제거</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="card" id="card-2">
+    <div class="card-title"><span class="sbadge">3</span> 선출직 설정</div>
+    <div id="pos-container"></div>
+    <button class="btn-add-pos" onclick="addPos()">＋ 선출직 추가</button>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="card" id="card-3">
+    <div class="card-title"><span class="sbadge">4</span> 투표 유의사항</div>
+    <div class="notice-hint">💡 투표지 공간상 <strong>5항목 이하</strong>를 권장합니다. 항목이 많으면 글씨가 작아질 수 있어요.</div>
+    <div class="notice-list" id="notice-list"></div>
+    <button class="btn-add-notice" onclick="addNotice('')">＋ 항목 추가</button>
+  </div>
+
+</div>
+</div>
+
+<!-- ══ 미리보기 화면 ══ -->
+<div id="preview-screen" style="display:none">
+  <div class="prev-bar">
+    <div class="gtabs" id="gtabs"></div>
+    <span class="prev-hint">인쇄: 가로방향 · 배율 100% · 여백 없음 · 원본 1장 출력 후 복사</span>
+  </div>
+  <div class="sheets-wrap" id="sheets-wrap"></div>
+</div>
+
+<script>
+const CIRCLE = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩'];
+const GRADES = ['g1','g2','g3'];
+const GLABEL = {g1:'1학년',g2:'2학년',g3:'3학년'};
+
+const DEFAULT_NOTICES = [
+  '이 투표는 비밀투표입니다. 투표 내용을 타인에게 알리지 마시오.',
+  '기표는 각 선출직마다 1곳에만 하시오.',
+  '기표 방법: ○ 또는 V 표시만 인정합니다.',
+  '선을 넘어 두 칸에 걸친 기표는 무효 처리됩니다.',
+  '투표지 훼손·낙서·타인에게 보여주는 행위 금지. 한 번만 접어 투표함에 넣으시오.',
+];
+const DEFAULT_POS = [
+  {title:'전교학생회장', voters:'all', cands:['','','']},
+  {title:'3학년 부회장',  voters:'g3',  cands:['']},
+  {title:'2학년 부회장',  voters:'g2',  cands:['']},
+  {title:'1학년 부회장',  voters:'g1',  cands:['','']},
+];
+
+let stampURL = '';
+let posIdx = 0;
+
+// ── 도장 ─────────────────────────────────────
+function loadStamp(input) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    stampURL = e.target.result;
+    document.getElementById('stamp-img').src = stampURL;
+    document.getElementById('stamp-img').style.display = 'block';
+    document.getElementById('stamp-ph').style.display = 'none';
+    document.getElementById('stamp-status').textContent = file.name;
+    document.getElementById('stamp-clear').style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+function clearStamp(e) {
+  e.stopPropagation();
+  stampURL = '';
+  document.getElementById('stamp-img').style.display = 'none';
+  document.getElementById('stamp-ph').style.display = 'flex';
+  document.getElementById('stamp-status').textContent = '이미지를 업로드하세요';
+  document.getElementById('stamp-clear').style.display = 'none';
+  document.getElementById('stamp-file').value = '';
+}
+
+// ── 선출직 ───────────────────────────────────
+function renderPositions() { DEFAULT_POS.forEach(p => addPos(p)); }
+function addPos(data) {
+  const id = posIdx++;
+  const t = data?.title||'', v = data?.voters||'all', cs = data?.cands||['',''];
+  const div = document.createElement('div');
+  div.className = 'pos-card'; div.id = `pc_${id}`;
+  div.innerHTML = `
+    <button class="btn-del-pos" onclick="document.getElementById('pc_${id}').remove();reNumPos()">삭제</button>
+    <div class="pos-hd">
+      <div class="pos-num" id="pn_${id}">?</div>
+      <input type="text" placeholder="선출직명 (예: 전교학생회장)" value="${t}">
+    </div>
+    <div class="pos-meta">
+      <label>투표권</label>
+      <select>
+        <option value="all" ${v==='all'?'selected':''}>전교생</option>
+        <option value="g1"  ${v==='g1' ?'selected':''}>1학년만</option>
+        <option value="g2"  ${v==='g2' ?'selected':''}>2학년만</option>
+        <option value="g3"  ${v==='g3' ?'selected':''}>3학년만</option>
+      </select>
+    </div>
+    <div class="cands-lbl">후보자 <span style="color:#aaa;font-weight:400;font-size:.7rem">(1명이면 자동 찬반투표)</span></div>
+    <div class="cands-list" id="cl_${id}"></div>
+    <button class="btn-add-cand" onclick="addCand(${id})">＋ 후보자 추가</button>`;
+  document.getElementById('pos-container').appendChild(div);
+  cs.forEach(n => addCand(id, n));
+  reNumPos();
+}
+function reNumPos() {
+  document.querySelectorAll('.pos-card').forEach((c,i) => {
+    const nb = c.querySelector('.pos-num'); if (nb) nb.textContent = i+1;
+  });
+}
+function addCand(pid, name='') {
+  const list = document.getElementById(`cl_${pid}`); if (!list) return;
+  const n = list.children.length + 1;
+  const row = document.createElement('div'); row.className = 'cand-row';
+  row.innerHTML = `<span class="cn">${n}번</span>
+    <input type="text" placeholder="이름" value="${name}" oninput="updCand(${pid})">
+    <button class="btn-del-x" onclick="if(document.getElementById('cl_${pid}').children.length>1){this.parentElement.remove();updCand(${pid})}">✕</button>`;
+  list.appendChild(row);
+  updCand(pid);
+}
+function updCand(pid) {
+  const list = document.getElementById(`cl_${pid}`); if (!list) return;
+  const rows = list.querySelectorAll('.cand-row');
+  const isAp = rows.length === 1;
+  rows.forEach((r,i) => {
+    r.querySelector('.cn').textContent = `${i+1}번`;
+    let badge = r.querySelector('.approval-badge');
+    if (isAp) {
+      if (!badge) { badge = document.createElement('span'); badge.className='approval-badge'; badge.textContent='찬반투표'; r.appendChild(badge); }
+    } else { if (badge) badge.remove(); }
+  });
+}
+
+// ── 유의사항 ──────────────────────────────────
+function renderNotices() { DEFAULT_NOTICES.forEach(t => addNotice(t)); }
+function addNotice(txt='') {
+  const list = document.getElementById('notice-list');
+  const n = list.children.length;
+  const row = document.createElement('div'); row.className = 'notice-row';
+  row.innerHTML = `<span class="ni">${CIRCLE[n]||n+1}</span>
+    <input type="text" value="${txt}" placeholder="유의사항 입력">
+    <button class="btn-del-x" onclick="this.parentElement.remove();reNumNotice()">✕</button>`;
+  list.appendChild(row);
+}
+function reNumNotice() {
+  document.querySelectorAll('.notice-row').forEach((r,i) => {
+    r.querySelector('.ni').textContent = CIRCLE[i]||i+1;
+  });
+}
+
+// ── 데이터 수집 ───────────────────────────────
+function collect() {
+  const school = document.getElementById('school').value.trim()||'학교';
+  const year   = document.getElementById('year').value.trim()||'2026';
+  const etitle = document.getElementById('etitle').value.trim()||'전교학생회 임원선거';
+  const positions = [];
+  document.querySelectorAll('.pos-card').forEach(card => {
+    const title  = card.querySelector('.pos-hd input').value.trim();
+    const voters = card.querySelector('.pos-meta select').value;
+    const cands  = Array.from(card.querySelectorAll('.cands-list input')).map(i=>i.value.trim()||'미정');
+    if (title) positions.push({title,voters,cands});
+  });
+  const notices = Array.from(document.querySelectorAll('.notice-row input')).map(i=>i.value.trim()).filter(Boolean);
+  return {school,year,etitle,positions,notices};
+}
+
+// ── 투표지 HTML ───────────────────────────────
+function makeBallot(positions, notices, school, year) {
+  let body = '';
+  positions.forEach(pos => {
+    body += `<div class="b-pos-title">${year}학년도 ${school} ${pos.title}</div>`;
+    const isAp = pos.cands.length === 1;
+    if (isAp) {
+      body += `
+        <div class="b-solo">
+          <div class="bc bcl">기&nbsp;호</div>
+          <div class="bc bcn">1</div>
+          <div class="bc bcm">${pos.cands[0]}</div>
+        </div>
+        <div class="b-ap-label">
+          <div class="balc">찬&nbsp;&nbsp;성</div><div class="balc">반&nbsp;&nbsp;대</div>
+        </div>
+        <div class="b-ap-box">
+          <div class="babc"></div><div class="babc"></div>
+        </div>`;
+    } else {
+      pos.cands.forEach((name,i) => {
+        const last = i===pos.cands.length-1;
+        body += `<div class="b-cand${last?' se':''}">
+          <div class="bc bcl">기&nbsp;호</div>
+          <div class="bc bcn">${i+1}</div>
+          <div class="bc bcm">${name}</div>
+          <div class="bc"></div>
+        </div>`;
+      });
+    }
+  });
+
+  if (notices.length > 0) {
+    const items = notices.map((n,i)=>`<li>${CIRCLE[i]||i+1} ${n}</li>`).join('');
+    body += `<div class="b-notice">
+      <div class="b-notice-title">【투표 유의사항】</div>
+      <ul class="b-notice-list">${items}</ul>
+    </div>`;
+  }
+
+  const stampHTML = stampURL ? `<img class="stamp" src="${stampURL}" alt="직인">` : '';
+  return `<div class="ballot">
+    <div class="b-title">투&nbsp;&nbsp;표&nbsp;&nbsp;용&nbsp;&nbsp;지</div>
+    <div class="b-body">${body}</div>
+    <div class="b-footer">
+      <div class="b-footer-txt">${school} 학생선거관리위원회</div>
+      ${stampHTML}
+    </div>
+  </div>`;
+}
+
+function makeSheet(positions, notices, school, year) {
+  const cut = '✂  ' + '─  '.repeat(72);
+  const row = (pos) => {
+    let html = '';
+    for (let c=0; c<3; c++) {
+      html += makeBallot(pos, notices, school, year);
+      if (c<2) html += `<div class="cut-v"><div class="cut-v-line"></div></div>`;
+    }
+    return `<div class="ballot-row">${html}</div>`;
+  };
+  return `<div class="a4">
+    ${row(positions)}
+    <div class="cut-h">${cut}</div>
+    ${row(positions)}
+  </div>`;
+}
+
+// ── 미리보기 ──────────────────────────────────
+function buildPreview(data) {
+  const {school,year,etitle,positions,notices} = data;
+  const wrap = document.getElementById('sheets-wrap');
+  const tabBar = document.getElementById('gtabs');
+  wrap.innerHTML = ''; tabBar.innerHTML = '';
+
+  const gradePos = {};
+  GRADES.forEach(g => { gradePos[g] = positions.filter(p=>p.voters==='all'||p.voters===g); });
+
+  // 탭 (해당 선출직 있는 학년만)
+  const allBtn = document.createElement('button');
+  allBtn.className='gtab on'; allBtn.textContent='전체';
+  allBtn.onclick=()=>setGTab('all',allBtn);
+  tabBar.appendChild(allBtn);
+
+  GRADES.forEach(g => {
+    const btn = document.createElement('button');
+    btn.className='gtab'; btn.textContent=GLABEL[g]; btn.dataset.g=g;
+    btn.onclick=()=>setGTab(g,btn);
+    tabBar.appendChild(btn);
+  });
+
+  // 학년별 시트 (1장씩)
+  GRADES.forEach(g => {
+    const sec = document.createElement('div');
+    sec.className='grade-sec on'; sec.id=`sec_${g}`;
+    const gp = gradePos[g];
+    if (gp.length === 0) {
+      sec.innerHTML=`<div style="color:#888;padding:20px;font-size:.88rem;background:white;border-radius:6px;">${GLABEL[g]}에 해당하는 선출직이 없습니다.</div>`;
+    } else {
+      sec.innerHTML = makeSheet(gp, notices, school, year);
+    }
+    wrap.appendChild(sec);
+  });
+}
+
+function setGTab(gk, el) {
+  document.querySelectorAll('.gtab').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.grade-sec').forEach(s=>{
+    s.classList.toggle('on', gk==='all'||s.id===`sec_${gk}`);
+  });
+}
+
+// ── 화면 전환 ─────────────────────────────────
+function goPreview() {
+  buildPreview(collect());
+  document.getElementById('setup-screen').style.display='none';
+  document.getElementById('preview-screen').style.display='block';
+  document.getElementById('hd-setup').style.display='none';
+  document.getElementById('hd-prev').style.display='flex';
+  document.getElementById('stepbar').style.display='none';
+}
+function goSetup() {
+  document.getElementById('setup-screen').style.display='block';
+  document.getElementById('preview-screen').style.display='none';
+  document.getElementById('hd-setup').style.display='flex';
+  document.getElementById('hd-prev').style.display='none';
+  document.getElementById('stepbar').style.display='flex';
+}
+function scrollCard(n) {
+  document.getElementById(`card-${n}`)?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.stepbar-item').forEach((s,i)=>s.classList.toggle('on',i===n));
+}
+
+// ── 초기화 ───────────────────────────────────
+renderPositions();
+renderNotices();
+</script>
+</body>
+</html>
